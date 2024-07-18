@@ -52,10 +52,14 @@ bot.onText(/\/help/, (msg) => {
 bot.onText(/\/monitor/, async (msg) => {
   const chatId = msg.chat.id;
   const response = await axios.get(
-    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether&vs_currencies=usd"
   );
   const ethereumPrice = response.data.ethereum.usd;
-  bot.sendMessage(chatId, `Ethereum price is now ${ethereumPrice} USD!`);
+  const tetherPrice = response.data.tether.usd;
+  bot.sendMessage(
+    chatId,
+    `Ethereum price is now ${ethereumPrice} USD!\nTether price is now ${tetherPrice}`
+  );
 });
 
 const getSetting = () => SETTINGS;
@@ -65,16 +69,21 @@ const setSetting = (params) => (SETTINGS = params);
 const endBot = (chatId) =>
   setSetting(getSetting().filter((item) => item.chatId !== chatId));
 
-const mainFunc = ({ chatId, amount }, ethereumPrice) => {
+const mainFunc = ({ chatId, amount }, ethereumPrice, tetherPrice) => {
   if (ethereumPrice > amount) {
     bot.sendMessage(chatId, `🤩`);
     setTimeout(() => {
-      bot.sendMessage(chatId, `Ethereum price is now ${ethereumPrice} USD!`);
-    }, 250);
+      bot.sendMessage(
+        chatId,
+        `Ethereum price is now ${ethereumPrice} USD!\nTether price is now ${tetherPrice}\n\n***${
+          0.14277183 * Number(ethereumPrice)
+        } $***\n***${(0.14277183 * Number(ethereumPrice)) / Number(tetherPrice)} USDT***`
+      );
+    }, 200);
     setTimeout(() => {
       endBot(chatId);
       bot.sendMessage(chatId, "Bot finished!");
-    }, 500);
+    }, 1000);
   }
 };
 
@@ -83,11 +92,14 @@ const onTimer = () => {
   if (settings.length) {
     (async () => {
       const response = await axios.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+        "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether&vs_currencies=usd"
       );
       const ethereumPrice = response.data.ethereum.usd;
+      const tetherPrice = response.data.tether.usd;
       settings = getSetting();
-      settings.forEach((setting) => mainFunc(setting, ethereumPrice));
+      settings.forEach((setting) =>
+        mainFunc(setting, ethereumPrice, tetherPrice)
+      );
     })();
   }
   setTimeout(() => {
