@@ -8,20 +8,24 @@ let SETTINGS = [];
 
 bot.onText(/\/start (.+)/, (msg, match) => {
   const chatId = msg.chat.id;
-  const amount = match[1];
+  let amount = match[1];
   console.log("/start", chatId, amount);
   if (amount && !isNaN(amount)) {
+    amount = Number(amount);
+    let dir = amount >= 0;
+    amount = Math.abs(amount);
     const settings = getSetting();
     if (settings.find((item) => item.chatId === chatId)) {
       setSetting(
         settings.map((item) => ({
           ...item,
           amount: item.chatId === chatId ? amount : item.amount,
+          dir: item.chatId === chatId ? dir : item.dir,
         }))
       );
       bot.sendMessage(chatId, "Bot updated!");
     } else {
-      setSetting([...settings, { chatId, amount }]);
+      setSetting([...settings, { chatId, amount, dir }]);
       bot.sendMessage(chatId, "Bot started!");
     }
   } else {
@@ -36,6 +40,17 @@ bot.onText(/\/finish/, (msg) => {
   if (settings.find((item) => item.chatId === chatId)) {
     endBot(chatId);
     bot.sendMessage(chatId, "Bot finished!");
+  } else {
+    bot.sendMessage(chatId, "/start first!");
+  }
+});
+
+bot.onText(/\/status/, (msg) => {
+  const chatId = msg.chat.id;
+  const settings = getSetting();
+  const user = settings.find((item) => item.chatId === chatId);
+  if (user) {
+    bot.sendMessage(chatId, "Current Status: " + JSON.stringify(user));
   } else {
     bot.sendMessage(chatId, "/start first!");
   }
@@ -69,15 +84,20 @@ const setSetting = (params) => (SETTINGS = params);
 const endBot = (chatId) =>
   setSetting(getSetting().filter((item) => item.chatId !== chatId));
 
-const mainFunc = ({ chatId, amount }, ethereumPrice, tetherPrice) => {
-  if (ethereumPrice > amount) {
+/*
+\n\n***${
+  0.14277183 * Number(ethereumPrice)
+} $***\n***${
+  (0.14277183 * Number(ethereumPrice)) / Number(tetherPrice)
+} USDT***
+*/
+const compare = ({ chatId, amount, dir }, ethereumPrice, tetherPrice) => {
+  if ((dir && ethereumPrice > amount) || (!dir && ethereumPrice < amount)) {
     bot.sendMessage(chatId, `🤩`);
     setTimeout(() => {
       bot.sendMessage(
         chatId,
-        `Ethereum price is now ${ethereumPrice} USD!\nTether price is now ${tetherPrice}\n\n***${
-          0.14277183 * Number(ethereumPrice)
-        } $***\n***${(0.14277183 * Number(ethereumPrice)) / Number(tetherPrice)} USDT***`
+        `Ethereum price is now ${ethereumPrice} USD!\nTether price is now ${tetherPrice}`
       );
     }, 200);
     setTimeout(() => {
@@ -98,7 +118,7 @@ const onTimer = () => {
       const tetherPrice = response.data.tether.usd;
       settings = getSetting();
       settings.forEach((setting) =>
-        mainFunc(setting, ethereumPrice, tetherPrice)
+        compare(setting, ethereumPrice, tetherPrice)
       );
     })();
   }
