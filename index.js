@@ -67,7 +67,10 @@ const endBot = (chatId) =>
 
 const mainFunc = ({ chatId, amount }, ethereumPrice) => {
   if (ethereumPrice > amount) {
-    bot.sendMessage(chatId, `Ethereum price is now ${ethereumPrice} USD!`);
+    bot.sendMessage(chatId, `🤩`);
+    setTimeout(() => {
+      bot.sendMessage(chatId, `Ethereum price is now ${ethereumPrice} USD!`);
+    }, 250);
     setTimeout(() => {
       endBot(chatId);
       bot.sendMessage(chatId, "Bot finished!");
@@ -89,7 +92,7 @@ const onTimer = () => {
   }
   setTimeout(() => {
     onTimer();
-  }, 30000);
+  }, 20000);
 };
 
 onTimer();
