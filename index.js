@@ -108,25 +108,40 @@ const compare = ({ chatId, amount, dir }, ethereumPrice, tetherPrice) => {
 };
 
 const onTimer = () => {
-  let settings = getSetting();
-  if (settings.length) {
-    (async () => {
+  (async () => {
+    const settings = getSetting();
+    if (settings.length) {
       const response = await axios.get(
         "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether&vs_currencies=usd"
       );
       const ethereumPrice = response.data.ethereum.usd;
       const tetherPrice = response.data.tether.usd;
-      settings = getSetting();
       settings.forEach((setting) =>
         compare(setting, ethereumPrice, tetherPrice)
       );
-    })();
-  }
+    }
+  })();
   setTimeout(() => {
     onTimer();
   }, 20000);
 };
 
 onTimer();
+
+setInterval(() => {
+  (async () => {
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether&vs_currencies=usd"
+    );
+    const ethereumPrice = response.data.ethereum.usd;
+    const tetherPrice = response.data.tether.usd;
+    if (ethereumPrice < 3300 || ethereumPrice > 3450) {
+      bot.sendMessage(
+        7086461598,
+        `Ethereum: ${ethereumPrice} USD\nTether: ${tetherPrice} USD`
+      );
+    }
+  })();
+}, 600000);
 
 console.log("Start Bot");
